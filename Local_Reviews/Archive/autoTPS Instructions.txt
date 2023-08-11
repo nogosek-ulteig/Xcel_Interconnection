@@ -1,0 +1,82 @@
+INSTRUCTIONS:
+1.) On the Xcel-side, open the screening tool and refresh the data, then save the workbook and close it.
+2.) Get a tonicDM link and send the screning tool to Ulteig side
+5.) Close the tracker and run autoTPS (only run if all reviews marked as complete have been processed!)
+7.) The tracker will be automatically updated with the results and an email will automatically be sent to the solar office
+    with applications which failed
+
+
+
+
+
+
+Sub TPS()
+
+Dim caseNum As String
+Dim Helper_workbook As Workbook
+Dim DER_workbook As Workbook
+Dim EmailApp As Outlook.Application
+Dim EmailItem As Outlook.MailItem
+Dim IAfails As String
+IAfails = ""
+
+For i = 1 To 500
+    Application.ScreenUpdating = False
+    Set Helper_workbook = Workbooks.Open("C:\Users\joe.nogosek\Downloads\Helper.xlsx")
+    Set DER_workbook = ThisWorkbook
+    caseNum = Helper_workbook.Worksheets("Sheet").Range("A" & i)
+    DER_workbook.Worksheets("Entry Form").Range("C11") = caseNum
+    
+    feederPercent = DER_workbook.Worksheets("Entry Form").Range("C48")
+    transformerPercent = DER_workbook.Worksheets("Entry Form").Range("J48")
+    
+    Helper_workbook.Worksheets("Sheet").Range("D" & i) = feederPercent
+    Helper_workbook.Worksheets("Sheet").Range("E" & i) = transformerPercent
+    
+    Formula1 = "=IF(AND(OR(RC[-2]>0.8,RC[-1]>0.8),OR(RC[-2]<>""#ERROR"",RC[-1]<>""#ERROR"")),""Fail"",IF(OR(RC[-2]="""",RC[-1]="""",RC[-2]=""#ERROR"",RC[-1]=""#ERROR"",RC[-1]=""#ERROR""),""?"",""Pass""))"
+    Formula2 = "=IF(RC[-1]=""Fail"",RC[-5],"""")"
+    Formula3 = "=IFERROR(INDEX(C[-1],SMALL(IF(R1C[-1]:R1000C[-1]<>"""",ROW(R1C[-6]:R1000C[-6])),ROWS(R1C[-1]:RC[-1]))),"""")"
+    Formula4 = "=IFERROR(INDEX(R1C1:R1000C3,MATCH(RC[-1],C[-7],0),3),"""")"
+    
+    Helper_workbook.Worksheets("Sheet").Range("F" & i).Formula = Formula1
+    Helper_workbook.Worksheets("Sheet").Range("G" & i).Formula = Formula2
+    Helper_workbook.Worksheets("Sheet").Range("H" & i).Formula2 = Formula3
+    Helper_workbook.Worksheets("Sheet").Range("I" & i).Formula = Formula4
+    
+    Next i
+    
+Helper_workbook.Worksheets("Sheet").Range("J1").Formula = "=COUNTIF(C[-4],""Fail"")"
+
+numFails = Helper_workbook.Worksheets("Sheet").Range("J1").Value
+
+If numFails = 0 Then
+    
+Else
+    For J = 1 To numFails
+        IAfails = IAfails & Helper_workbook.Worksheets("Sheet").Range("I" & J) & " (" & Helper_workbook.Worksheets("Sheet").Range("H" & J) & ")<br/>"
+    Next J
+End If
+
+Helper_workbook.Close SaveChanges:=True
+Application.ScreenUpdating = True
+
+If numFails = 0 Then
+
+Else
+    Set EmailApp = New Outlook.Application
+    Set EmailItem = EmailApp.CreateItem(olMailItem)
+    EmailItem.To = "solarprogrammn@xcelenergy.com"
+    EmailItem.CC = "Nicholas.J.Coquyt@xcelenergy.com;nicholas.j.catalano@xcelenergy.com;ross.t.kirby@xcelenergy.com;joseph.h.nogosek@xcelenergy.com;joshua.j.guck@xcelenergy.com"
+    EmailItem.BCC = "joe.nogosek@ulteig.com"
+    EmailItem.Subject = "PMO On Hold Request"
+    EmailItem.HTMLBody = "Hi PMO team,<br/><br/>" & _
+    "Could you please put the reviews listed below on hold? The applications have failed due to the TPS violation.<br/><br/>" & _
+    IAfails & _
+    "<br/>" & _
+    "Thank you!<br/>" & _
+    "Joe Nogosek"
+    
+    EmailItem.Send
+End If
+
+End Sub
