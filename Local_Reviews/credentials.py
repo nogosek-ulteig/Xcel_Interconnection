@@ -3,7 +3,7 @@ import os
 user_env = os.getlogin()
 
 username = 'joseph.h.nogosek@xcelenergy.com'
-password = 'airdoc6Ee'
+password = ''
 name = 'Joseph Nogosek'
 
 path_to_driver = os.path.join('C:\\Users', user_env, 'Documents', 'Python','chromedriver.exe')
